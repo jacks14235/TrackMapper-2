@@ -1,0 +1,75 @@
+//
+//  LoginView.swift
+//  TrackMapper
+//
+//  Created by Arnav Nayak on 3/27/25.
+//
+
+import SwiftUI
+import AuthenticationServices
+
+struct LoginView: View {
+    @State private var email: String = "livingstonrhonda@example.net"
+    @State private var password: String = "user_1"
+    @State private var error: String?
+    @State private var isLoading: Bool = false
+    @EnvironmentObject var auth: AuthStore
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                Text("Login")
+                    .font(.largeTitle)
+                TextField("Email", text: $email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .textFieldStyle(.roundedBorder)
+                SecureField("Password", text: $password)
+                    .textFieldStyle(.roundedBorder)
+                if let error = error { Text(error).foregroundColor(.red).font(.caption) }
+                Button(action: login) {
+                    HStack { if isLoading { ProgressView() } ; Text("Sign In") }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue.opacity(0.8))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+                .disabled(isLoading)
+                
+                SignInWithAppleButton(onRequest: { _ in }, onCompletion: { _ in })
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 44)
+                    .padding(.top, 8)
+                    .disabled(true)
+                    .overlay(Text("Apple Sign-In (dev placeholder)").font(.footnote).foregroundColor(.secondary))
+                
+                NavigationLink("Create an account", destination: RegistrationView())
+                    .padding(.top, 8)
+            }
+            .padding()
+        }
+    }
+    
+    func login() {
+        error = nil
+        isLoading = true
+        AuthService.shared.login(email: email, password: password) { result in
+            DispatchQueue.main.async {
+                isLoading = false
+                switch result {
+                case .success(let payload):
+                    auth.token = payload.token
+                    auth.currentUser = payload.user
+                case .failure(let e):
+                    error = e.localizedDescription
+                }
+            }
+        }
+    }
+}
+
+//#Preview {
+//    LoginView(isLoggedIn: .constant(false))
+//}
