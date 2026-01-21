@@ -11,6 +11,7 @@ import UIKit
 
 struct MapMakerDraftState {
     var title: String = ""
+    var description: String = ""
     var picked: Int = 0
     var imageData: Data? = nil
     var pairs: [CoordPair] = []

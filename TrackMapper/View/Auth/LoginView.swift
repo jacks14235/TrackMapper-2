@@ -9,8 +9,8 @@ import SwiftUI
 import AuthenticationServices
 
 struct LoginView: View {
-    @State private var email: String = "livingstonrhonda@example.net"
-    @State private var password: String = "user_1"
+    @State private var email: String = "prattdawn@example.com"
+    @State private var password: String = "user_deborah02"
     @State private var error: String?
     @State private var isLoading: Bool = false
     @EnvironmentObject var auth: AuthStore

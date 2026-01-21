@@ -8,7 +8,7 @@
 import Foundation
 
 struct UserProfile: Codable, Identifiable {
-    let id: UUID
+    let id: String
     var name: String
     var username: String
     var password: String

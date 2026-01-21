@@ -1,23 +1,25 @@
 # app/models.py
+import uuid
 from .extensions import db
 from datetime import datetime, timezone
-from sqlalchemy import func
+from sqlalchemy import func, UUID
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 
 # friend table
 friend = db.Table(
     'friend',
-    db.Column('user_id',   db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('friend_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('user_id',   UUID(as_uuid=True), db.ForeignKey('user.id'), primary_key=True),
+    db.Column('friend_id', UUID(as_uuid=True), db.ForeignKey('user.id'), primary_key=True),
 )
 
 class User(db.Model):
-    id        = db.Column(db.Integer, primary_key=True)
+    id        = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     firstname = db.Column(db.String(63),  nullable=False)
     lastname  = db.Column(db.String(63),  nullable=False)
     username  = db.Column(db.String(255), nullable=False, unique=True)
     email     = db.Column(db.String(255), nullable=False, unique=True)
     password_hash = db.Column(db.String(255), nullable=False, default="")
+    # ... rest of the class ...
 
     friends = db.relationship(
         'User',
@@ -43,21 +45,21 @@ class User(db.Model):
 
     def to_dict(self):
         return {
-            'id':        self.id,
+            'id':        str(self.id),
             'firstname': self.firstname,
             'lastname':  self.lastname,
             'username':  self.username,
             'email':     self.email,
-            'friends':   [f.id for f in self.friends]
+            'friends':   [str(f.id) for f in self.friends]
         }
 
 
 class Map(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title= db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(255), nullable=True)
     image_path = db.Column(db.String(256), nullable=False, unique=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('user.id'), nullable=False)
     latitude    = db.Column(db.Float, nullable=False)
     longitude   = db.Column(db.Float, nullable=False)
     num_points = db.Column(db.Integer, nullable=False)
@@ -70,11 +72,11 @@ class Map(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'title': self.title,
             'description': self.description,
             'image_path': self.image_path,
-            'user_id': self.user_id,
+            'user_id': str(self.user_id),
             'latitude':    self.latitude,
             'longitude':   self.longitude,
             'num_points':  self.num_points,
@@ -104,11 +106,11 @@ class Map(db.Model):
         ))
         
 class Activity(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title= db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(255), nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    map_id = db.Column(db.Integer, db.ForeignKey('map.id'), nullable=True)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('user.id'), nullable=False)
+    map_id = db.Column(UUID(as_uuid=True), db.ForeignKey('map.id'), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     distance = db.Column(db.Float, nullable=True)
     elapsed_time = db.Column(db.Float, nullable=True)
@@ -120,11 +122,11 @@ class Activity(db.Model):
     
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'title': self.title,
             'description': self.description,
-            'user_id': self.user_id,
-            'map_id': self.map_id,
+            'user_id': str(self.user_id),
+            'map_id': str(self.map_id) if self.map_id else None,
             'created_at': self.created_at.isoformat(),
             'distance': self.distance,
             'elapsed_time': self.elapsed_time

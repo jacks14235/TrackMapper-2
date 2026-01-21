@@ -40,6 +40,8 @@ struct MapMakerView: View {
     @State var picked: Int = 0
     @State var presetMap: Int = 0
     @State var title: String = ""
+    @State var description: String = ""
+    @State private var showSaveModal: Bool = false
     @State var mapCenter = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     @State var imageData: UIImage?
     @State var error: String?
@@ -55,6 +57,7 @@ struct MapMakerView: View {
     init(mapDownload: MapDownload? = nil) {
         self.mapDownload = mapDownload
         _title = State(initialValue: mapDownload?.title ?? "")
+        _description = State(initialValue: mapDownload?.description ?? "")
         _mapClick = State(initialValue: Coordinate(x: mapDownload?.latitude ?? 0, y: mapDownload?.longitude ?? 0))
         let spline = Spline(coordinates: [])
         _spline = State(initialValue: spline)
@@ -76,11 +79,9 @@ struct MapMakerView: View {
                     PhotoPicker(selectedImage: $imageData)
                 }
             } else {
-                Button(action: { saveMap() }) {
+                Button(action: { showSaveModal = true }) {
                     Text("Save")
                 }
-                TextField("Title", text: $title)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
                 Picker("Select", selection: $picked) {
                     Text("Map").tag(0)
                     Text("Image").tag(1)
@@ -145,8 +146,20 @@ struct MapMakerView: View {
             }
         }
         .onChange(of: title) { persistDraft() }
+        .onChange(of: description) { persistDraft() }
         .onChange(of: picked) { persistDraft() }
         .onChange(of: imageData) { persistDraft() }
+        .sheet(isPresented: $showSaveModal) {
+            MapMakerSaveModal(
+                title: $title,
+                description: $description,
+                onCancel: { showSaveModal = false },
+                onSubmit: {
+                    showSaveModal = false
+                    saveMap()
+                }
+            )
+        }
     }
 
     func submitPoints() {
@@ -173,7 +186,7 @@ struct MapMakerView: View {
             let center = s.getCenter()
             let upload = MapUpload(
                 title: title,
-                description: "A map called \(title)",
+                description: description,
                 latitude: center.lat,
                 longitude: center.lon,
                 uploadedAt: Date.now,
@@ -207,6 +220,9 @@ struct MapMakerView: View {
         if !draft.title.isEmpty {
             title = draft.title
         }
+        if !draft.description.isEmpty {
+            description = draft.description
+        }
         picked = draft.picked
         
         if let data = draft.imageData, imageData == nil {
@@ -222,9 +238,39 @@ struct MapMakerView: View {
     private func persistDraft() {
         var draft = session.mapMakerDraft(for: draftKey) ?? MapMakerDraftState()
         draft.title = title
+        draft.description = description
         draft.picked = picked
         draft.pairs = spline?.getPairs() ?? []
         draft.imageData = imageData?.jpegData(compressionQuality: 0.9)
         session.saveMapMakerDraft(draft, for: draftKey)
+    }
+}
+
+private struct MapMakerSaveModal: View {
+    @Binding var title: String
+    @Binding var description: String
+    let onCancel: () -> Void
+    let onSubmit: () -> Void
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(header: Text("Map Details")) {
+                    TextField("Title", text: $title)
+                    TextField("Description", text: $description, axis: .vertical)
+                        .lineLimit(3...8)
+                }
+            }
+            .navigationTitle("Save Map")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onCancel() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Upload") { onSubmit() }
+                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
     }
 }

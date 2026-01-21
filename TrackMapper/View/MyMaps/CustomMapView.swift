@@ -10,16 +10,16 @@ import MapKit
 
 enum MapSelection: Equatable, Hashable {
     case appleMap
-    case customMap(Int)
-    var id: Int? {
+    case customMap(String)
+    var id: String? {
         switch self {
         case .appleMap: return nil
         case .customMap(let id): return id
         }
     }
     
-    static func fromID(_ id: Int?) -> MapSelection {
-        if let i = id, i >= 0 {
+    static func fromID(_ id: String?) -> MapSelection {
+        if let i = id, !i.isEmpty {
             return .customMap(i)
         } else {
             return .appleMap

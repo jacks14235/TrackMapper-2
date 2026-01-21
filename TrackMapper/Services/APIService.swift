@@ -11,8 +11,7 @@ import SwiftUI
 final class APIService {
     static let shared = APIService() // singleton
     
-//    private let baseURL = "http://localhost:7860"
-    private let baseURL = "http://172.20.10.3:7860"
+    private let baseURL = Config.baseURL
     
     func nearestMaps(latitude: Double, longitude: Double, completion: @escaping (Result<[MapDownload], Error>) -> Void) {
         var comps = URLComponents(string: "\(baseURL)/maps/nearest")
@@ -128,7 +127,7 @@ final class APIService {
     }
 
     
-    func userMaps(userId: Int, completion: @escaping (Result<[MapDownload], Error>) -> Void) {
+    func userMaps(userId: String, completion: @escaping (Result<[MapDownload], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/users/\(userId)/maps") else {
             completion(.failure(APIError.invalidURL))
             return
@@ -179,7 +178,7 @@ final class APIService {
     
     // Gets the points and image for a given map Id
     func getMapData(
-        mapId: Int,
+        mapId: String,
         completion: @escaping (Result<([CoordPair], UIImage), Error>) -> Void
     ) {
         // 1) build your two endpoints
@@ -333,8 +332,8 @@ final class APIService {
         description: String,
         gpxData: String,
         createdAt: Date,
-        userId: Int,
-        mapId: Int,
+        userId: String,
+        mapId: String?,
         distance: Double,
         elapsedTime: Double,
         completion: @escaping (Result<ActivityDownload, Error>) -> Void
@@ -360,12 +359,16 @@ final class APIService {
             body.append("\(value)\r\n".data(using: .utf8)!)
         }
         
-        // a) your map fields
+        // a) your activity fields
         appendFormField(name: "title",      value: title)
         appendFormField(name: "description",value: description)
         appendFormField(name: "date", value: createdAt.ISO8601Format())
         appendFormField(name: "user_id", value: "\(userId)")
-        appendFormField(name: "map_id", value: "\(mapId)")
+        
+        if let mid = mapId, !mid.isEmpty {
+            appendFormField(name: "map_id", value: mid)
+        }
+        
         appendFormField(name: "distance", value: "\(distance)")
         appendFormField(name: "elapsed_time", value: "\(elapsedTime)")
         do {
@@ -405,7 +408,7 @@ final class APIService {
         .resume()
     }
     
-    func userActivities(userId: Int, completion: @escaping (Result<[ActivityDownload], Error>) -> Void) {
+    func userActivities(userId: String, completion: @escaping (Result<[ActivityDownload], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/users/\(userId)/activities") else {
             completion(.failure(APIError.invalidURL))
             return
@@ -456,15 +459,15 @@ final class APIService {
 
     // MARK: - Profile
     struct ServerUser: Codable {
-        let id: Int
+        let id: String
         let firstname: String
         let lastname: String
         let username: String
         let email: String
-        let friends: [Int]?
+        let friends: [String]?
     }
 
-    func fetchUserProfile(userID: Int, completion: @escaping (Result<ServerUser, Error>) -> Void) {
+    func fetchUserProfile(userID: String, completion: @escaping (Result<ServerUser, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/users/\(userID)/profile") else {
             completion(.failure(APIError.invalidURL)); return
         }
@@ -484,7 +487,7 @@ final class APIService {
         }.resume()
     }
 
-    func updateUserProfile(userID: Int, updatedData: [String: String], completion: @escaping (Result<ServerUser, Error>) -> Void) {
+    func updateUserProfile(userID: String, updatedData: [String: String], completion: @escaping (Result<ServerUser, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/users/\(userID)/profile") else {
             completion(.failure(APIError.invalidURL)); return
         }
@@ -509,7 +512,7 @@ final class APIService {
         }.resume()
     }
     
-    func friendActivities(userId: Int, completion: @escaping (Result<[ActivityDownload], Error>) -> Void) {
+    func friendActivities(userId: String, completion: @escaping (Result<[ActivityDownload], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/users/\(userId)/friends/activities") else {
             completion(.failure(APIError.invalidURL))
             return
@@ -558,7 +561,7 @@ final class APIService {
         }.resume()
     }
     
-    func getGpx(activityId: Int, completion: @escaping (Result<String, Error>) -> Void) {
+    func getGpx(activityId: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/download/gpx_\(activityId).gpx") else {
           return completion(.failure(APIError.invalidURL))
         }
@@ -594,7 +597,7 @@ final class APIService {
     }
     
     func deleteMap(
-        mapId: Int,
+        mapId: String,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         // 1. Build URL
@@ -637,7 +640,7 @@ final class APIService {
     }
     
     func deleteActivity(
-        activityId: Int,
+        activityId: String,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         // 1. Build URL
@@ -694,11 +697,11 @@ enum APIError: String, Error, LocalizedError {
 
 
 struct MapDownload: Codable, Identifiable {
-    let id: Int
+    let id: String
     let title: String
     let description: String
     let imagePath: String
-    let userId: Int
+    let userId: String
     let latitude: Double
     let longitude: Double
     let numPoints: Int
@@ -742,12 +745,12 @@ struct MapUpload: Codable {
 }
 
 struct ActivityDownload: Codable, Identifiable, Hashable {
-    let id: Int
+    let id: String
     let title: String
     let description: String
     let createdAt: Date
-    let userId: Int
-    let mapId: Int?
+    let userId: String
+    let mapId: String?
     let username: String
     let distance: Double?
     let elapsedTime: Double?

@@ -29,7 +29,7 @@ final class ProfileViewModel: ObservableObject {
     }
     
     /// Retrieves the current user ID from the session.
-    var currentUserID: Int? {
+    var currentUserID: String? {
         // AuthService returns integer IDs, prefer auth.currentUser
         return auth?.currentUser?.id
     }

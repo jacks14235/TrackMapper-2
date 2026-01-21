@@ -28,7 +28,7 @@ extension MapObject {
         let defaultCenter = Coordinate(x: 0, y: 0)
         let defaultPairs: [CoordPair] = []  // You can decide how to handle map interpolation pairs
         let metadata = MapMetadata(name: mapPost.title, description: mapPost.description, center: defaultCenter, N: 0, pairs: defaultPairs)
-        self.init(metadata: metadata, hash: mapPost.id.uuidString)
+        self.init(metadata: metadata, hash: mapPost.id)
     }
 }
 
@@ -196,7 +196,7 @@ func loadAllFromHash(fromHash hash: String) -> (String, String, Coordinate, Spli
     }
 }
 
-func deleteLocalMap(id: Int) -> Bool {
+func deleteLocalMap(id: String) -> Bool {
     let folderName = "map_\(id)"
     let folderURL = getDocumentsDirectory().appendingPathComponent(folderName)
     

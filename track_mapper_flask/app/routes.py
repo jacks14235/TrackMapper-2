@@ -36,7 +36,7 @@ def _get_user_from_token():
     if not token.startswith('token-'):
         abort(401, "Invalid token format")
     try:
-        user_id = int(token.split('-', 1)[1])
+        user_id = token.split('-', 1)[1]
     except Exception:
         abort(401, "Invalid token payload")
     user = User.query.get(user_id)
@@ -114,7 +114,7 @@ def maps_nearest():
         for m, dist in results
     ])
     
-@bp.route('/users/<int:user_id>/maps')
+@bp.route('/users/<uuid:user_id>/maps')
 def user_maps(user_id):
 
     try:
@@ -230,7 +230,7 @@ def create_map():
     return jsonify({**new_map.to_dict(), "username": user.username}), 201
 
 
-@bp.route('/maps/<int:map_id>', methods=['DELETE'])
+@bp.route('/maps/<uuid:map_id>', methods=['DELETE'])
 def delete_map(map_id):
     # 1) fetch or 404
     print("Deleting map with ID:", map_id)
@@ -293,8 +293,8 @@ def create_activity():
             title=title,
             description=description,
             created_at=datetime.strptime(date, "%Y-%m-%dT%H:%M:%SZ"),
-            user_id=int(user_id),
-            map_id=int(map_id),
+            user_id=user_id,
+            map_id=map_id,
             distance=float(distance),
             elapsed_time=float(elapsed_time)
         )
@@ -316,7 +316,7 @@ def create_activity():
 
     return jsonify(new_activity.to_dict()), 201
 
-@bp.route('/activities/<int:activity_id>', methods=['DELETE'])
+@bp.route('/activities/<uuid:activity_id>', methods=['DELETE'])
 def delete_activity(activity_id):
     # Require auth; only allow deleting your own activity
     user = _get_user_from_token()
@@ -339,7 +339,7 @@ def delete_activity(activity_id):
     
     return '', 204
 
-@bp.route('/users/<int:user_id>/activities', methods=['GET'])
+@bp.route('/users/<uuid:user_id>/activities', methods=['GET'])
 def user_activities(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -362,13 +362,13 @@ def user_activities(user_id):
 
 
 # Profile endpoints
-@bp.route('/users/<int:user_id>/profile', methods=['GET'])
+@bp.route('/users/<uuid:user_id>/profile', methods=['GET'])
 def get_user_profile(user_id):
     user = User.query.get_or_404(user_id)
     return jsonify(user.to_dict())
 
 
-@bp.route('/users/<int:user_id>/profile', methods=['PUT'])
+@bp.route('/users/<uuid:user_id>/profile', methods=['PUT'])
 def update_user_profile(user_id):
     user = User.query.get_or_404(user_id)
     data = request.get_json() or {}
@@ -391,7 +391,7 @@ def update_user_profile(user_id):
     return jsonify(user.to_dict())
     
 # get most recent activities from a user's friend
-@bp.route('/users/<int:user_id>/friends/activities', methods=['GET'])
+@bp.route('/users/<uuid:user_id>/friends/activities', methods=['GET'])
 def user_friends_activities(user_id):
     user = User.query.get_or_404(user_id)
     friend_ids = [f.id for f in user.friends] + [user.id]  # Include the user's own ID

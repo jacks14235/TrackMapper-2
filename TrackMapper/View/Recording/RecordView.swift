@@ -79,7 +79,7 @@ struct RecordView: View {
         let distance = locationStore.totalDistance
         let elapsedTime = locationStore.elapsedTime
         if let userId = auth.currentUser?.id {
-            APIService.shared.uploadActivity(title: title, description: description, gpxData: data, createdAt: Date.now, userId: userId, mapId: mapID.id ?? -1, distance: distance, elapsedTime: elapsedTime) { result in
+            APIService.shared.uploadActivity(title: title, description: description, gpxData: data, createdAt: Date.now, userId: userId, mapId: mapID.id, distance: distance, elapsedTime: elapsedTime) { result in
                 switch result {
                 case .success(let activity):
                     print("Successfully uploaded activity with ID \(activity.id)")

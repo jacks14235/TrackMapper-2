@@ -13,7 +13,7 @@ struct AuthPayload: Codable {
 }
 
 struct AuthUser: Codable {
-    let id: Int
+    let id: String
     let firstname: String
     let lastname: String
     let username: String
@@ -24,9 +24,7 @@ final class AuthService {
     static let shared = AuthService()
     private init() {}
     
-    // Duplicate the base URL here for now to avoid changing APIService
-//    private let baseURL: String = "http://localhost:7860"
-    private let baseURL: String = "http://172.20.10.3:7860"
+    private let baseURL: String = Config.baseURL
     
     func register(email: String, password: String, completion: @escaping (Result<AuthPayload, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/auth/register") else {

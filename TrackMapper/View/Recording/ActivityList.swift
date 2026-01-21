@@ -62,7 +62,8 @@ struct ActivityList: View {
                     if let data = gpxData, let stats = try? GPXUtils.stats(from: data) {
                         print("distance", stats.distanceMeters)
                         print("time", stats.elapsedTime)
-                        APIService.shared.uploadActivity(title: title, description: description, gpxData: data, createdAt: Date.now, userId: userId, mapId: 1, distance: stats.distanceMeters, elapsedTime: stats.elapsedTime) { result in
+                        // Note: mapId is now a String, using a placeholder for now
+                        APIService.shared.uploadActivity(title: title, description: description, gpxData: data, createdAt: Date.now, userId: userId, mapId: "", distance: stats.distanceMeters, elapsedTime: stats.elapsedTime) { result in
                             switch result {
                             case .success(let activity):
                                 activities.insert(activity, at: 0)
@@ -171,7 +172,7 @@ struct ActivityList: View {
 
 struct ActivityListItem: View {
     var activity: ActivityDownload
-    var onClick: (_ id: Int) -> Void
+    var onClick: (_ id: String) -> Void
     
     var body: some View {
         Button(action: { onClick(activity.id) }) {
