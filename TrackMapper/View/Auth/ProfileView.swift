@@ -14,13 +14,16 @@ struct ProfileView: View {
         NavigationStack {
             Form {
                 Section(header: Text("Profile Info")) {
-                    TextField("Name", text: $viewModel.name)
+                    TextField("First Name", text: $viewModel.firstname)
+                        .autocapitalization(.words)
+                    TextField("Last Name", text: $viewModel.lastname)
                         .autocapitalization(.words)
                     TextField("Username", text: $viewModel.username)
                         .autocapitalization(.none)
                     TextField("Email", text: $viewModel.email)
                         .keyboardType(.emailAddress)
-                    SecureField("Password (leave blank to keep)", text: $viewModel.password)
+                        .disabled(true)
+                    // SecureField("Password (leave blank to keep)", text: $viewModel.password)
                 }
 
                 Section {

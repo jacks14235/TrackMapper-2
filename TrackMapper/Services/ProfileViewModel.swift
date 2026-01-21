@@ -8,7 +8,8 @@
 import SwiftUI
 
 final class ProfileViewModel: ObservableObject {
-    @Published var name: String = ""
+    @Published var firstname: String = ""
+    @Published var lastname: String = ""
     @Published var username: String = ""
     @Published var password: String = ""
     @Published var email: String = ""
@@ -46,7 +47,8 @@ final class ProfileViewModel: ObservableObject {
                 self?.isLoading = false
                 switch result {
                 case .success(let profile):
-                    self?.name = profile.firstname
+                    self?.firstname = profile.firstname
+                    self?.lastname = profile.lastname
                     self?.username = profile.username
                     self?.password = ""
                     self?.email = profile.email
@@ -64,11 +66,11 @@ final class ProfileViewModel: ObservableObject {
             return
         }
         var updatedData: [String: String] = [
-            "firstname": name,
+            "firstname": firstname,
+            "lastname": lastname,
             "username": username
         ]
         if !password.isEmpty { updatedData["password"] = password }
-        if !email.isEmpty { updatedData["email"] = email }
         isLoading = true
         APIService.shared.updateUserProfile(userID: userID, updatedData: updatedData) { [weak self] result in
             DispatchQueue.main.async {
@@ -77,7 +79,8 @@ final class ProfileViewModel: ObservableObject {
                 case .success(let profile):
                     self?.message = "Profile updated successfully."
                     // update session/auth user
-                    self?.session?.currentUser?.name = profile.firstname
+                    self?.session?.currentUser?.firstname = profile.firstname
+                    self?.session?.currentUser?.lastname = profile.lastname
                     self?.session?.currentUser?.username = profile.username
                 case .failure(let error):
                     self?.message = "Error updating profile: \(error.localizedDescription)"
@@ -89,7 +92,8 @@ final class ProfileViewModel: ObservableObject {
     /// Logs the user out by clearing the session and local profile fields.
     func logout() {
         session?.logout()
-        self.name = ""
+        self.firstname = ""
+        self.lastname = ""
         self.username = ""
         self.password = ""
         self.message = "Logged out."

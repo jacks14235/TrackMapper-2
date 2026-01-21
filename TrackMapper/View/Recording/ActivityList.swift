@@ -13,6 +13,8 @@ struct ActivityList: View {
     @Environment(\.dismiss) var dismiss
     @State private var gpxData: String?
     @State private var activities: [ActivityDownload] = []
+    @State private var maps: [MapDownload] = []
+    @State private var selectedMapId: String? = nil
     @State private var fileImporter = false
     @State private var showModal = false
     
@@ -34,6 +36,7 @@ struct ActivityList: View {
                 }
                 .onAppear {
                     refreshActivities()
+                    refreshMaps()
                 }
             }
         }
@@ -56,14 +59,24 @@ struct ActivityList: View {
             onCompletion: handleFileImport
         )
         .sheet(isPresented: $showModal) {
-            SaveModalView (
+            ActivitySaveModalView(
+                maps: maps,
+                selectedMapId: $selectedMapId,
                 onSave: { title, description in
                     guard let userId = auth.currentUser?.id else { return }
                     if let data = gpxData, let stats = try? GPXUtils.stats(from: data) {
                         print("distance", stats.distanceMeters)
                         print("time", stats.elapsedTime)
-                        // Note: mapId is now a String, using a placeholder for now
-                        APIService.shared.uploadActivity(title: title, description: description, gpxData: data, createdAt: Date.now, userId: userId, mapId: "", distance: stats.distanceMeters, elapsedTime: stats.elapsedTime) { result in
+                        APIService.shared.uploadActivity(
+                            title: title,
+                            description: description,
+                            gpxData: data,
+                            createdAt: Date.now,
+                            userId: userId,
+                            mapId: selectedMapId,
+                            distance: stats.distanceMeters,
+                            elapsedTime: stats.elapsedTime
+                        ) { result in
                             switch result {
                             case .success(let activity):
                                 activities.insert(activity, at: 0)
@@ -87,6 +100,21 @@ struct ActivityList: View {
                 activities = resp
             case .failure(let error):
                 print("Error downloading activities: \(error)")
+            }
+        }
+    }
+
+    private func refreshMaps() {
+        guard let userId = auth.currentUser?.id else { return }
+        APIService.shared.userMaps(userId: userId) { result in
+            switch result {
+            case .success(let maps):
+                self.maps = maps
+                if selectedMapId == nil {
+                    selectedMapId = maps.first?.id
+                }
+            case .failure(let error):
+                print("Error downloading maps: \(error)")
             }
         }
     }
@@ -212,5 +240,64 @@ struct ActivityListItem: View {
         df.dateStyle = .medium
         df.timeStyle = .short
         return df
+    }
+}
+
+private struct ActivitySaveModalView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var title: String = ""
+    @State private var description: String = ""
+    let maps: [MapDownload]
+    @Binding var selectedMapId: String?
+    
+    var onSave: (_ title: String, _ description: String) -> Void
+    var onDelete: () -> Void
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Title")) {
+                    TextField("Enter title", text: $title)
+                        .autocapitalization(.sentences)
+                }
+                
+                Section(header: Text("Description")) {
+                    TextEditor(text: $description)
+                        .frame(minHeight: 150)
+                }
+                
+                Section(header: Text("Map")) {
+                    Picker("Map", selection: $selectedMapId) {
+                        Text("No map").tag(String?.none)
+                        ForEach(maps) { map in
+                            Text(map.title).tag(Optional(map.id))
+                        }
+                    }
+                }
+            }
+            .navigationTitle("New Activity")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .destructiveAction) {
+                    Button("Delete") {
+                        onDelete()
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        if title != "" {
+                            onSave(title, description)
+                            dismiss()
+                        }
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
     }
 }

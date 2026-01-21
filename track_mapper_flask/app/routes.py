@@ -2,6 +2,7 @@
 import os
 import json
 import uuid
+from functools import wraps
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_from_directory, abort, current_app
 from werkzeug.security import generate_password_hash
@@ -21,6 +22,13 @@ def allowed_file(filename):
         and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
     )
 
+
+def require_auth(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        user = _get_user_from_token()
+        return func(user=user, *args, **kwargs)
+    return wrapper
 
 def _get_user_from_token():
     """Simple token parser: expects Authorization header with a token like
@@ -161,10 +169,10 @@ class CoordPair:
 
 
 @bp.route('/maps/upload', methods=['POST'])
-def create_map():
+@require_auth
+def create_map(user):
     
-    # resolve the user from the Authorization token
-    user = _get_user_from_token()
+    # user is injected by @require_auth
     # 1) pull out form fields + files
     title       = request.form.get('title')
     latitude    = request.form.get('latitude')
@@ -263,7 +271,7 @@ def create_activity():
     description  = request.form.get('description')
     date         = request.form.get('date')
     user_id      = request.form.get('user_id')
-    map_id       = request.form.get('map_id')
+    map_id       = request.form.get('map_id') if request.form.get('map_id') else -1
     gpx_file     = request.files.get('gpx')
     distance     = request.form.get('distance')
     elapsed_time = request.form.get('elapsed_time')
@@ -318,9 +326,9 @@ def create_activity():
     return jsonify(new_activity.to_dict()), 201
 
 @bp.route('/activities/<uuid:activity_id>', methods=['DELETE'])
-def delete_activity(activity_id):
+@require_auth
+def delete_activity(activity_id, user):
     # Require auth; only allow deleting your own activity
-    user = _get_user_from_token()
     
     act = Activity.query.get_or_404(activity_id)
     if act.user_id != user.id:
@@ -370,18 +378,17 @@ def get_user_profile(user_id):
 
 
 @bp.route('/users/<uuid:user_id>/profile', methods=['PUT'])
-def update_user_profile(user_id):
-    user = User.query.get_or_404(user_id)
+@require_auth
+def update_user_profile(user_id, user):
     data = request.get_json() or {}
-    # Accept firstname, lastname, username, email, password
+    print("editing user", user.to_dict())
+    # Accept firstname, lastname, username, password
     if 'firstname' in data:
         user.firstname = data['firstname']
     if 'lastname' in data:
         user.lastname = data['lastname']
     if 'username' in data:
         user.username = data['username']
-    if 'email' in data:
-        user.email = data['email']
     if 'password' in data and data['password']:
         user.password_hash = generate_password_hash(data['password'])
     try:

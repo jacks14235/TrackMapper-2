@@ -12,6 +12,7 @@ final class APIService {
     static let shared = APIService() // singleton
     
     private let baseURL = Config.baseURL
+    private let fileURL = Config.fileURL
     
     func nearestMaps(latitude: Double, longitude: Double, completion: @escaping (Result<[MapDownload], Error>) -> Void) {
         var comps = URLComponents(string: "\(baseURL)/maps/nearest")
@@ -183,8 +184,8 @@ final class APIService {
     ) {
         // 1) build your two endpoints
         guard
-          let pointsURL = URL(string: "\(baseURL)/download/points_\(mapId).json"),
-          let imageURL  = URL(string: "\(baseURL)/download/image_\(mapId).jpg")
+          let pointsURL = URL(string: "\(fileURL)/points_\(mapId).json"),
+          let imageURL  = URL(string: "\(fileURL)/image_\(mapId).jpg")
         else {
           return completion(.failure(APIError.invalidURL))
         }
@@ -562,7 +563,7 @@ final class APIService {
     }
     
     func getGpx(activityId: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/download/gpx_\(activityId).gpx") else {
+        guard let url = URL(string: "\(fileURL)/gpx_\(activityId).gpx") else {
           return completion(.failure(APIError.invalidURL))
         }
 

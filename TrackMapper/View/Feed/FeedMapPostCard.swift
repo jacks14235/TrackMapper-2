@@ -42,7 +42,7 @@ struct FeedMapPostCard: View {
             }
             
             // Display user information.
-            Text("By \(map.user.name) (@\(map.user.username))")
+            Text("By (@\(map.user.username))")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             

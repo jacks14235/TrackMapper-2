@@ -11,7 +11,7 @@ if _db_url:
         _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = _db_url
 else:
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, 'files.db')
+    SQLALCHEMY_DATABASE_URI = "postgresql://localhost:5432/trackmapper"
 
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'app', 'uploads')
