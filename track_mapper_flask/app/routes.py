@@ -1,6 +1,7 @@
 # app/routes.py
 import os
 import json
+import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_from_directory, abort, current_app
 from werkzeug.security import generate_password_hash
@@ -36,7 +37,7 @@ def _get_user_from_token():
     if not token.startswith('token-'):
         abort(401, "Invalid token format")
     try:
-        user_id = token.split('-', 1)[1]
+        user_id = uuid.UUID(token.split('-', 1)[1])
     except Exception:
         abort(401, "Invalid token payload")
     user = User.query.get(user_id)

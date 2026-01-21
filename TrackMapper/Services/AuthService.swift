@@ -73,6 +73,43 @@ final class AuthService {
             }
         }.resume()
     }
+
+    func googleLogin(
+        email: String,
+        googleId: String,
+        firstname: String,
+        lastname: String,
+        username: String,
+        completion: @escaping (Result<AuthPayload, Error>) -> Void
+    ) {
+        guard let url = URL(string: "\(baseURL)/auth/google") else {
+            completion(.failure(APIError.invalidURL)); return
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: String] = [
+            "email": email,
+            "google_id": googleId,
+            "firstname": firstname,
+            "lastname": lastname,
+            "username": username
+        ]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        URLSession.shared.dataTask(with: req) { data, resp, err in
+            if let err = err { return completion(.failure(err)) }
+            guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode), let data = data else {
+                let code = (resp as? HTTPURLResponse)?.statusCode ?? -1
+                return completion(.failure(NSError(domain: "Auth", code: code)))
+            }
+            do {
+                let decoded = try JSONDecoder().decode(AuthPayload.self, from: data)
+                completion(.success(decoded))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
 }
 
 

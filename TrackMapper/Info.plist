@@ -12,5 +12,18 @@
 		<string>location</string>
 		<string>NS</string>
 	</array>
+    <key>GIDClientID</key>
+    <string>916945367088-mv0vk0lgkt36bjfjfgnjljajnj11f41c.apps.googleusercontent.com</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.916945367088-mv0vk0lgkt36bjfjfgnjljajnj11f41c</string>
+        </array>
+      </dict>
+    </array>
+    <key>GIDServerClientID</key>
+    <string>916945367088-nrgen53b26lv0h2dq2sr295eqo1hr5ji.apps.googleusercontent.com</string>
 </dict>
 </plist>

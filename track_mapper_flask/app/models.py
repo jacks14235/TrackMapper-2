@@ -18,8 +18,8 @@ class User(db.Model):
     lastname  = db.Column(db.String(63),  nullable=False)
     username  = db.Column(db.String(255), nullable=False, unique=True)
     email     = db.Column(db.String(255), nullable=False, unique=True)
+    google_id = db.Column(db.String(255), nullable=True, unique=True)
     password_hash = db.Column(db.String(255), nullable=False, default="")
-    # ... rest of the class ...
 
     friends = db.relationship(
         'User',
@@ -50,6 +50,7 @@ class User(db.Model):
             'lastname':  self.lastname,
             'username':  self.username,
             'email':     self.email,
+            'google_id': self.google_id,
             'friends':   [str(f.id) for f in self.friends]
         }
 

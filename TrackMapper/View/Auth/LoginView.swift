@@ -7,6 +7,8 @@
 
 import SwiftUI
 import AuthenticationServices
+import GoogleSignIn
+import GoogleSignInSwift
 
 struct LoginView: View {
     @State private var email: String = "prattdawn@example.com"
@@ -38,6 +40,10 @@ struct LoginView: View {
                 }
                 .disabled(isLoading)
                 
+                GoogleSignInButton(action: signInWithGoogle)
+                    .frame(height: 44)
+                    .disabled(isLoading)
+                
                 SignInWithAppleButton(onRequest: { _ in }, onCompletion: { _ in })
                     .signInWithAppleButtonStyle(.black)
                     .frame(height: 44)
@@ -67,6 +73,66 @@ struct LoginView: View {
                 }
             }
         }
+    }
+    
+    func signInWithGoogle() {
+        error = nil
+        isLoading = true
+        guard let presentingViewController = topViewController() else {
+            error = "Unable to present Google Sign-In."
+            isLoading = false
+            return
+        }
+        
+        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { result, signInError in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let signInError {
+                    error = signInError.localizedDescription
+                    return
+                }
+                guard let result else {
+                    error = "Google Sign-In returned no result."
+                    return
+                }
+                
+                let user = result.user
+                let email = user.profile?.email ?? ""
+                let firstname = user.profile?.givenName ?? ""
+                let lastname = user.profile?.familyName ?? ""
+                let username = email.split(separator: "@").first.map(String.init) ?? email
+                let googleId = user.userID ?? ""
+                
+                AuthService.shared.googleLogin(
+                    email: email,
+                    googleId: googleId,
+                    firstname: firstname.isEmpty ? "Google" : firstname,
+                    lastname: lastname,
+                    username: username
+                ) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let payload):
+                            auth.token = payload.token
+                            auth.currentUser = payload.user
+                        case .failure(let e):
+                            error = e.localizedDescription
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func topViewController() -> UIViewController? {
+        let scenes = UIApplication.shared.connectedScenes
+        let windowScene = scenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
+        let window = windowScene?.windows.first { $0.isKeyWindow }
+        var topController = window?.rootViewController
+        while let presented = topController?.presentedViewController {
+            topController = presented
+        }
+        return topController
     }
 }
 

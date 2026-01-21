@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GoogleSignIn
 
 @main
 struct TrackMapperApp: App {
@@ -13,12 +14,21 @@ struct TrackMapperApp: App {
     @StateObject var sessionManager = SessionManager.shared
     @StateObject var authStore = AuthStore()
     
+    init() {
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+            clientID: Config.googleOAuthClientID
+        )
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(locationStore)
                 .environmentObject(sessionManager)
                 .environmentObject(authStore)
+                .onOpenURL { url in
+                    _ = GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }
