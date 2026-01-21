@@ -64,6 +64,10 @@ Files are organized into subfolders within the bucket/upload directory:
 1.  **Web Service**: Deploy the `track_mapper_flask` directory.
 2.  **Environment Groups**: Add all `.env` variables to Render's Environment Variables dashboard.
 3.  **PostgreSQL**: Provision a Render PostgreSQL instance and copy the Internal Database URL to `DATABASE_URL`.
+4.  **Start Command**: Set the start command to:
+    ```bash
+    gunicorn run:app
+    ```
 
 ## 4. Frontend Configuration (`TrackMapper`)
 
