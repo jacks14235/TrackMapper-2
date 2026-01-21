@@ -9,6 +9,7 @@ from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 from .extensions import db
 from .models import Map, User, Activity
+from .storage import save_file, delete_file, get_file_response
 from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 
@@ -66,24 +67,17 @@ def upload_file():
     raw = secure_filename(file.filename)
     ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
     fname = f"{ts}_{raw}"
-    upload_folder = current_app.config['UPLOAD_FOLDER']
-    path = os.path.join(upload_folder, fname)
-    file.save(path)
-
     ext = raw.rsplit('.', 1)[1].lower()
-    rec = File(filename=fname, filetype=('gpx' if ext=='gpx' else 'image'))
-    db.session.add(rec)
-    db.session.commit()
-    return jsonify(rec.to_dict()), 201
+    folder = 'activities' if ext == 'gpx' else 'images'
+    save_file(file, folder, fname)
 
-@bp.route('/download/<filename>', methods=['GET'])
-def download_file(filename):
-    safe = secure_filename(filename)
-    folder = current_app.config['UPLOAD_FOLDER']
-    full = os.path.join(folder, safe)
-    if not os.path.exists(full):
-        abort(404)
-    return send_from_directory(folder, safe, as_attachment=True)
+    return jsonify(filename=fname, folder=folder), 201
+
+@bp.route('/download/<folder>/<filename>', methods=['GET'])
+def download_file(folder, filename):
+    safe_folder = secure_filename(folder)
+    safe_filename = secure_filename(filename)
+    return get_file_response(safe_folder, safe_filename)
 
 @bp.route('/maps/nearest')
 def maps_nearest():
@@ -211,19 +205,14 @@ def create_map(user):
         db.session.add(new_map)
         db.session.flush()     # so new_map.id is populated
 
-        # 4) build file names
-        upload_dir     = current_app.config['UPLOAD_FOLDER']
-        os.makedirs(upload_dir, exist_ok=True)
-        
+        # 4) build file names and save
         # points JSON
-        pts_fname      = f"points_{new_map.id}.json"
-        pts_full_path  = os.path.join(upload_dir, pts_fname)
-        with open(pts_full_path, 'w') as f:
-            json.dump(points, f)
+        pts_fname = f"{new_map.id}.json"
+        save_file(json.dumps(points).encode('utf-8'), 'points', pts_fname)
         
-        img_fname      = f"image_{new_map.id}.jpg"
-        img_full_path  = os.path.join(upload_dir, img_fname)
-        image_file.save(img_full_path)
+        # image file
+        img_fname = f"{new_map.id}.jpg"
+        save_file(image_file, 'images', img_fname)
 
         # 5) update the Map record
         new_map.image_path  = img_fname
@@ -233,7 +222,8 @@ def create_map(user):
 
     except Exception as e:
         db.session.rollback()
-        print("Error during map creation:", e)
+        # print("Error during map creation:", e)
+        raise e
         return jsonify(error=str(e)), 500
 
     return jsonify({**new_map.to_dict(), "username": user.username}), 201
@@ -246,13 +236,8 @@ def delete_map(map_id):
     m = Map.query.get_or_404(map_id)
     print("Found map:", m)
 
-    upload_dir = current_app.config['UPLOAD_FOLDER']
-    img_fp = os.path.join(upload_dir, f'image_{m.id}.jpg')
-    if os.path.exists(img_fp):
-        os.remove(img_fp)
-    points_fp = os.path.join(upload_dir, f'points_{m.id}.json')
-    if os.path.exists(points_fp):
-        os.remove(points_fp)
+    delete_file('images', f'{m.id}.jpg')
+    delete_file('points', f'{m.id}.json')
 
     # 4) delete DB record
     try:
@@ -311,11 +296,8 @@ def create_activity():
         db.session.flush()
         
         # save the GPX file
-        upload_dir = current_app.config['UPLOAD_FOLDER']
-        os.makedirs(upload_dir, exist_ok=True)
-        gpx_fname = f"gpx_{new_activity.id}.gpx"
-        gpx_full_path = os.path.join(upload_dir, gpx_fname)
-        gpx_file.save(gpx_full_path)
+        gpx_fname = f"{new_activity.id}.gpx"
+        save_file(gpx_file, 'activities', gpx_fname)
         
         db.session.commit()
     except Exception as e:
@@ -334,10 +316,7 @@ def delete_activity(activity_id, user):
     if act.user_id != user.id:
         abort(403, "You can only delete your own activities")
     
-    upload_dir = current_app.config['UPLOAD_FOLDER']
-    gpx_fp = os.path.join(upload_dir, f'gpx_{act.id}.gpx')
-    if os.path.exists(gpx_fp):
-        os.remove(gpx_fp)
+    delete_file('activities', f'{act.id}.gpx')
     
     try:
         db.session.delete(act)

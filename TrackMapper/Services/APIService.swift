@@ -184,8 +184,8 @@ final class APIService {
     ) {
         // 1) build your two endpoints
         guard
-          let pointsURL = URL(string: "\(fileURL)/points_\(mapId).json"),
-          let imageURL  = URL(string: "\(fileURL)/image_\(mapId).jpg")
+          let pointsURL = URL(string: "\(fileURL)/points/\(mapId).json"),
+          let imageURL  = URL(string: "\(fileURL)/images/\(mapId).jpg")
         else {
           return completion(.failure(APIError.invalidURL))
         }
@@ -563,7 +563,7 @@ final class APIService {
     }
     
     func getGpx(activityId: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: "\(fileURL)/gpx_\(activityId).gpx") else {
+        guard let url = URL(string: "\(fileURL)/activities/\(activityId).gpx") else {
           return completion(.failure(APIError.invalidURL))
         }
 
